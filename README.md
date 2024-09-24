@@ -15,7 +15,7 @@
 1. **INSTALL the package using pip**:
 
    ```bash
-   pip install django-audit-logger
+   pip install django-audit-kafkalogger
    
 2. **Add it to your Django INSTALLED_APPS**:
 
