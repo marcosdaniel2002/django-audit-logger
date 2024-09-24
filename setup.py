@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django-audit-kafkalogger',
-    version='0.1',
+    version='0.2',
     packages=find_packages(),
     install_requires=[
         'Django>=3.0',

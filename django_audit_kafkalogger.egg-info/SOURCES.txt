@@ -6,7 +6,6 @@ audit_logger/apps.py
 audit_logger/logger.py
 audit_logger/middlewares.py
 audit_logger/producer.py
-audit_logger/signals.py
 django_audit_kafkalogger.egg-info/PKG-INFO
 django_audit_kafkalogger.egg-info/SOURCES.txt
 django_audit_kafkalogger.egg-info/dependency_links.txt
