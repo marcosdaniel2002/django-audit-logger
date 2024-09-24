@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 from django.apps import apps
 from django.db import connection
+from .logger import AuditLogger
 
 class AuditLoggerConfig(AppConfig):
     name = 'audit_logger'
