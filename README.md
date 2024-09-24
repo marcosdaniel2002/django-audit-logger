@@ -1,43 +1,43 @@
-# Django Audit Logger
+# Unemi Audit Kafka
 
-`django-audit-logger` is a reusable Django app that automatically audits model changes (create, update, delete) across all models in your Django project. It integrates with Kafka for log streaming and allows flexible configuration auditing for important models. The app captures useful metadata such as the user who made the changes, request IP, URL, and more.
+`unemi-audi-kafka` es una aplicación reutilizable de Django que audita automáticamente los cambios en los modelos (creación, actualización, eliminación) en todos los modelos de tu proyecto Django. Se integra con Kafka para el envío de logs y permite una auditoría configurable para los modelos importantes. La aplicación captura metadatos útiles como el usuario que realizó los cambios, la IP de la solicitud, la URL y más.
 
-## Features
+## Características
 
-- **Automatic Auditing**: Automatically register all Django models for audit logging after migrations.
-- **Kafka Integration**: Uses `confluent_kafka` to send audit logs to Kafka topics.
-- **Configuration Auditing**: Manually register important models for configuration auditing.
-- **User Context Middleware**: Captures information about the user, request IP, and user agent via middleware.
-- **Customizable**: You can extend or override middleware, and control the Kafka producer behavior.
+- **Auditoría Automática**: Registra automáticamente todos los modelos de Django para el registro de auditoría.
+- **Integración con Kafka**: Utiliza `confluent_kafka` para enviar los registros de auditoría a los temas de Kafka..
+- **Auditoría de Configuración**: Registra manualmente modelos importantes para la auditoría de configuración..
+- **Middleware de Contexto de Usuario**: Captura información sobre el usuario, la IP de la solicitud y el agente de usuario a través de middleware.
+- **Personalizable**: Puedes extender o sobrescribir middleware, y controlar el comportamiento del productor de Kafka.
 
-## Installation
+## Instalación
 
-1. **INSTALL the package using pip**:
+1. **INSTALAR la librería usando pip**:
 
    ```bash
-   pip install django-audit-kafkalogger
+   pip install unemi-audi-kafka
    
-2. **Add it to your Django INSTALLED_APPS**:
+2. **Agregar la libreria en Django INSTALLED_APPS**:
 
-    In your `settings.py`, configure the apps:
+    En tu `settings.py`, configura las aplicaciones:
     ```python
    INSTALLED_APPS = [
        # Other installed apps
        'audit_logger',
    ]
 
-3. **Add the MIDDLEWARE**:
+3. **Agregar el MIDDLEWARE**:
 
-    In your `settings.py`, configure the middlewares:
+    En tu `settings.py`, configura las middlewares:
     ```python
    MIDDLEWARE = [
        # Other middlewares
        'audit_logger.middlewares.AuditUserMiddleware',
    ]
 
-4. **Add KAFKA CONFIGURATION**:
+4. **Agregar CONFIGURACIONES DE KAFKA**:
     
-    In your `settings.py`, configure the Kafka broker and topics:
+    En tu `settings.py`, configurar los Kafka broker y topics:
     ```python
     KAFKA_BROKER_URL = 'localhost:9092'  # Replace with your Kafka broker URL
     KAFKA_TOPIC_LOGS = 'audit_logs'      # Topic for log auditing
@@ -45,3 +45,16 @@
     KAFKA_TOPIC_CONFIG = 'audit_config'  # Topic for configuration auditing
 
 
+## Opcional
+Si deseas guardar las configuraciones de tu aplicacion, la puedes separar de los otras tablas con:
+
+En tu `models.py`, agregar modelo manualmente:
+   
+   ```python
+   from audit_logger import AuditLogger
+   
+    class Configuracion(ModelBase):
+    nombre = models.CharField(unique=True, max_length=100, verbose_name=u'Nombre')
+   
+   # Registrar Configuracion
+   AuditLogger.register_auditoria_config(Configuracion)

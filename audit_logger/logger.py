@@ -11,35 +11,44 @@ from django.forms.models import model_to_dict
 from .middlewares import AuditUserMiddleware
 from .producer import KafkaProducer
 
-
 class AuditLogger:
     previous_instance_state = {}
-
-    @staticmethod
-    def _serialize_instance(instance):
-        """Converts a model instance to a serializable dictionary."""
-        data = model_to_dict(instance)
-
-        for field in instance._meta.fields:
-            value = getattr(instance, field.name)
-            if isinstance(value, File):
-                data[field.name] = value.url if value else None
-            elif isinstance(value, Decimal):
-                data[field.name] = float(value)
-            elif isinstance(value, (DateClass, DateTimeClass)):
-                data[field.name] = value.isoformat()
-
-        return data
+    registered_models_logs = set()  # Track models registered for log auditing
+    registered_models_config = set()  # Track models registered for config auditing
 
     @staticmethod
     def register_auditoria_logs(model):
         """Registers a model for log auditing."""
-        AuditLogger._register_auditoria(model, 'logs')
+        if model in AuditLogger.registered_models_config:
+            print(f"Skipping {model.__name__} for logs as it's already registered for config.")
+            return
+
+        if model not in AuditLogger.registered_models_logs:
+            AuditLogger._register_auditoria(model, 'logs')
+            AuditLogger.registered_models_logs.add(model)
+            print(f"Registered {model.__name__} for log auditing.")
 
     @staticmethod
     def register_auditoria_config(model):
         """Registers a model for configuration auditing."""
-        AuditLogger._register_auditoria(model, 'config')
+        # Unbind log auditing if it's already registered
+        if model in AuditLogger.registered_models_logs:
+            AuditLogger._unregister_auditoria_logs(model)
+            print(f"Unregistered {model.__name__} from log auditing for config registration.")
+
+        if model not in AuditLogger.registered_models_config:
+            AuditLogger._register_auditoria(model, 'config')
+            AuditLogger.registered_models_config.add(model)
+            print(f"Registered {model.__name__} for configuration auditing.")
+
+    @staticmethod
+    def _unregister_auditoria_logs(model):
+        """Unregisters a model from log auditing."""
+        pre_save.disconnect(AuditLogger._audit_pre_save, sender=model)
+        post_save.disconnect(sender=model)
+        post_delete.disconnect(sender=model)
+        AuditLogger.registered_models_logs.discard(model)
+        print(f"Model {model.__name__} unregistered from log auditing.")
 
     @staticmethod
     def register_auditoria_errors(exception):
@@ -168,3 +177,19 @@ class AuditLogger:
             KafkaProducer.send_log_event(audit_data)
         elif event_type == 'config':
             KafkaProducer.send_config_event(audit_data)
+
+    @staticmethod
+    def _serialize_instance(instance):
+        """Converts a model instance to a serializable dictionary."""
+        data = model_to_dict(instance)
+
+        for field in instance._meta.fields:
+            value = getattr(instance, field.name)
+            if isinstance(value, File):
+                data[field.name] = value.url if value else None
+            elif isinstance(value, Decimal):
+                data[field.name] = float(value)
+            elif isinstance(value, (DateClass, DateTimeClass)):
+                data[field.name] = value.isoformat()
+
+        return data

@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='django-audit-kafkalogger',
-    version='0.2',
+    name='unemi-audi-kafka',
+    version='0.3',
     packages=find_packages(),
     install_requires=[
         'Django>=3.0',
         'confluent_kafka>=1.7.0',
     ],
-    description='A reusable Django app for auditing models automatically with Kafka integration',
+    description='Una aplicación reutilizable de Django para auditar modelos automáticamente con integración con Kafka.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',  # Specify that the description is in Markdown
     author='Marcos Daniel',
