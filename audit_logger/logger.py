@@ -180,9 +180,16 @@ class AuditLogger:
 
     @staticmethod
     def _serialize_instance(instance):
-        """Converts a model instance to a serializable dictionary."""
-        data = model_to_dict(instance)
+        """Converts a model instance to a serializable dictionary, including ManyToMany fields."""
+        # Convertir los campos regulares con model_to_dict
+        data = model_to_dict(instance, exclude=[field.name for field in instance._meta.many_to_many])
 
+        # Serializar campos ManyToMany
+        for field in instance._meta.many_to_many:
+            value = getattr(instance, field.name)
+            data[field.name] = list(value.values_list('id', flat=True))  # Solo los IDs de los objetos relacionados
+
+        # Procesar otros tipos de campos
         for field in instance._meta.fields:
             value = getattr(instance, field.name)
 
