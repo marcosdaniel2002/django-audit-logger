@@ -77,5 +77,5 @@ class AuditUserMiddleware(MiddlewareMixin):
         """
         request = AuditUserMiddleware.get_current_request()
         if request:
-            return request.build_absolute_uri()
+            return request.path
         return None
