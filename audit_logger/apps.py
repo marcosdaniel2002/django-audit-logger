@@ -8,7 +8,7 @@ class AuditLoggerConfig(AppConfig):
 
     def ready(self):
         # Automatically register all models for auditing
-        console.log('READY')
+        print('READY')
         self.register_all_audit_logs()
 
     def register_all_audit_logs(self):
