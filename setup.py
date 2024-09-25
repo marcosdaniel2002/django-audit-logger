@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='unemi-audi-kafka',
-    version='0.9',
+    version='0.10',
     packages=find_packages(),
     install_requires=[
         'Django>=2.2',
