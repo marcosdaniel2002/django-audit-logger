@@ -4,7 +4,7 @@ import traceback
 import inspect
 from decimal import Decimal
 from django.core.files import File
-from datetime import date as DateClass, datetime as DateTimeClass
+from datetime import date as DateClass, datetime as DateTimeClass, time
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.forms.models import model_to_dict
 
@@ -185,11 +185,14 @@ class AuditLogger:
 
         for field in instance._meta.fields:
             value = getattr(instance, field.name)
+
             if isinstance(value, File):
                 data[field.name] = value.url if value else None
             elif isinstance(value, Decimal):
                 data[field.name] = float(value)
             elif isinstance(value, (DateClass, DateTimeClass)):
                 data[field.name] = value.isoformat()
+            elif isinstance(value, time):
+                data[field.name] = value.strftime('%H:%M:%S')
 
         return data
