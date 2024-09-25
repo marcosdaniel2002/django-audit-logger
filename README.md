@@ -1,18 +1,18 @@
 # Unemi Audit Kafka
 
-`unemi-audi-kafka` es una aplicación reutilizable de Django que audita automáticamente los cambios en los modelos (creación, actualización, eliminación) en todos los modelos de tu proyecto Django. Se integra con Kafka para el envío de logs y permite una auditoría configurable para los modelos importantes. La aplicación captura metadatos útiles como el usuario que realizó los cambios, la IP de la solicitud, la URL y más.
+`unemi-audi-kafka` es una aplicacion reutilizable de Django que audita automaticamente los cambios en los modelos (creacion, actualizacion, eliminacion) en todos los modelos de tu proyecto Django. Se integra con Kafka para el envio de logs y permite una auditoria configurable para los modelos importantes. La aplicacion captura metadatos utiles como el usuario que realizo los cambios, la IP de la solicitud, la URL y mas.
 
-## Características
+## Caracteristicas
 
-- **Auditoría Automática**: Registra automáticamente todos los modelos de Django para el registro de auditoría.
-- **Integración con Kafka**: Utiliza `confluent_kafka` para enviar los registros de auditoría a los temas de Kafka..
-- **Auditoría de Configuración**: Registra manualmente modelos importantes para la auditoría de configuración..
-- **Middleware de Contexto de Usuario**: Captura información sobre el usuario, la IP de la solicitud y el agente de usuario a través de middleware.
+- **Auditoria Automatica**: Registra automaticamente todos los modelos de Django para el registro de auditoria.
+- **Integracion con Kafka**: Utiliza `confluent_kafka` para enviar los registros de auditoria a los temas de Kafka.
+- **Auditoria de Configuracion**: Registra manualmente modelos importantes para la auditoria de configuracion.
+- **Middleware de Contexto de Usuario**: Captura informacion sobre el usuario, la IP de la solicitud y el agente de usuario a traves de middleware.
 - **Personalizable**: Puedes extender o sobrescribir middleware, y controlar el comportamiento del productor de Kafka.
 
-## Instalación
+## Instalacion
 
-1. **INSTALAR la librería usando pip**:
+1. **INSTALAR la libreria usando pip**:
 
    ```bash
    pip install unemi-audi-kafka
