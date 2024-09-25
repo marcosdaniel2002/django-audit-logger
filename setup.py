@@ -5,7 +5,7 @@ setup(
     version='0.5',
     packages=find_packages(),
     install_requires=[
-        'Django>=3.0',
+        'Django>=2.2',
         'confluent_kafka>=1.7.0',
     ],
     description='Una aplicación reutilizable de Django para auditar modelos automáticamente con integración con Kafka.',
