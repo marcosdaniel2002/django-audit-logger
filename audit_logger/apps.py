@@ -13,8 +13,9 @@ class AuditLoggerConfig(AppConfig):
     def register_all_audit_logs(self):
         """Register all models for auditing."""
         all_models = apps.get_models()
-
+        console.log('here')
         for model in all_models:
+            console.log('here 2')
             # You can add a check to make sure the table exists
             if self.table_exists(model._meta.db_table):
                 AuditLogger.register_auditoria_logs(model)
