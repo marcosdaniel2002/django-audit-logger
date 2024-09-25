@@ -1,10 +1,17 @@
 import logging
 from confluent_kafka import Producer
 import json
+import os
 from django.conf import settings
 from confluent_kafka.admin import AdminClient
 
 class KafkaProducer:
+    @staticmethod
+    def _get_project_name():
+        """Obtiene el nombre del proyecto Django dinámicamente."""
+        project_name = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        return project_name
+
     @staticmethod
     def _kafka_admin_client():
         """Crea un cliente administrativo de Kafka para operaciones sobre topics."""
@@ -25,8 +32,14 @@ class KafkaProducer:
 
     @staticmethod
     def _kafka_producer():
-        """Crea y configura el productor de Kafka."""
-        return Producer({'bootstrap.servers': settings.KAFKA_BROKER_URL})
+        """Crea y configura el productor de Kafka, incluyendo el nombre del productor."""
+        project_name = KafkaProducer._get_project_name()
+        producer_name = f"producer_{project_name}"
+        logging.info(f"Creando productor Kafka: {producer_name}")
+        return Producer({
+            'bootstrap.servers': settings.KAFKA_BROKER_URL,
+            'client.id': producer_name  # Asigna un nombre al productor
+        })
 
     @staticmethod
     def _send_event(topic, data):
@@ -37,6 +50,7 @@ class KafkaProducer:
         producer = KafkaProducer._kafka_producer()
 
         if isinstance(data, dict):
+            data['producer'] = producer.producer_name
             data = json.dumps(data, ensure_ascii=False)  # Convierte el dict a JSON
         else:
             logging.error("El dato proporcionado no es un diccionario y no se puede serializar.")
