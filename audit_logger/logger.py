@@ -143,7 +143,7 @@ class AuditLogger:
 
         return {
             "model": sender.__name__,
-            "instance_id": instance.id,
+            "instance_id": getattr(instance, 'id', None),
             "description": getattr(instance, 'auditoria_descripcion', None),
             "action": action,
             "current_user": current_user or None,
