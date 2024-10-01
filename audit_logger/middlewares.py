@@ -13,12 +13,14 @@ class AuditUserMiddleware(MiddlewareMixin):
         self.get_response = get_response
 
     def __call__(self, request):
+        decoded_token = request.decoded_token
+        _thread_locals.decoded_token = decoded_token
         # Obtener el usuario anterior desde la sesión
         previous_user = request.session.get('user_anterior', None)
 
         # Almacenar el usuario actual en thread-local antes de procesar la solicitud
         _thread_locals.previous_user = previous_user
-        _thread_locals.user = request.user.pk
+        _thread_locals.user = decoded_token['usuario'].get('usuario', None)
 
         # Almacenar la request en thread-local
         _thread_locals.request = request
@@ -52,12 +54,11 @@ class AuditUserMiddleware(MiddlewareMixin):
         """
         Devuelve la IP del cliente.
         """
-        request = AuditUserMiddleware.get_current_request()
-        if request:
-            ip = request.META.get('HTTP_X_FORWARDED_FOR')
-            if ip:
-                return ip.split(',')[0]  # En caso de que haya múltiples IPs, toma la primera
-            return request.META.get('REMOTE_ADDR')
+        decoded = getattr(_thread_locals, 'decoded_token', None)
+        if decoded:
+            datasession = getattr(_thread_locals, 'dataUserSession', None)
+            ip = datasession.ip if datasession.ip else None
+            return ip
         return None
 
     @staticmethod
