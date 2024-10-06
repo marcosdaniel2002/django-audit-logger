@@ -39,11 +39,22 @@
     
     En tu `settings.py`, configurar los Kafka broker y topics:
     ```python
-    KAFKA_BROKER_URL = 'localhost:9092'  # Replace with your Kafka broker URL
+    KAFKA_BROKER_URL = '35.212.2.202:9092'  # Replace with your Kafka broker URL
     KAFKA_TOPIC_LOGS = 'audit_logs'      # Topic for log auditing
     KAFKA_TOPIC_ERRORS = 'audit_errors'  # Topic for error logging
     KAFKA_TOPIC_CONFIG = 'audit_config'  # Topic for configuration auditing
 
+5. **Agregar REQUEST en el LOGIN**:
+
+   En tu `decorators_helper.py`, agregar en la funcion de login_required:
+    ```python
+   from audit_logger.middlewares import set_current_request
+   
+   def login_required(f):
+       def new_f(view, request):
+         # code for decoded token
+         set_current_request(request)
+         return f(view, request)
 
 ## Opcional
 Si deseas guardar las configuraciones de tu aplicacion, la puedes separar de los otras tablas con:
