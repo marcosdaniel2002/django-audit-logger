@@ -16,56 +16,104 @@
 
    ```bash
    pip install unemi-audi-kafka
-   
+
+   ```
+
 2. **Agregar la libreria en Django INSTALLED_APPS**:
 
-    En tu `settings.py`, configura las aplicaciones:
-    ```python
+   En tu `settings.py`, configura las aplicaciones:
+
+   ```python
    INSTALLED_APPS = [
-       # Other installed apps
-       'audit_logger',
+      # Other installed apps
+      'audit_logger',
    ]
+
+   ```
 
 3. **Agregar el MIDDLEWARE**:
 
-    En tu `settings.py`, configura las middlewares:
-    ```python
+   En tu `settings.py`, configura las middlewares:
+
+   ```python
    MIDDLEWARE = [
-       # Other middlewares
-       'audit_logger.middlewares.AuditUserMiddleware',
+      # Other middlewares
+      'audit_logger.middlewares.AuditUserMiddleware',
    ]
 
+   ```
+
 4. **Agregar CONFIGURACIONES DE KAFKA**:
-    
-    En tu `settings.py`, configurar los Kafka broker y topics:
-    ```python
-    KAFKA_BROKER_URL = '35.212.2.202:9092'  # Replace with your Kafka broker URL
-    KAFKA_TOPIC_LOGS = 'audit_logs'      # Topic for log auditing
-    KAFKA_TOPIC_ERRORS = 'audit_errors'  # Topic for error logging
-    KAFKA_TOPIC_CONFIG = 'audit_config'  # Topic for configuration auditing
+
+   En tu `settings.py`, configurar los Kafka broker y topics:
+
+   ```python
+   KAFKA_BROKER_URL = '35.212.2.202:9092'  # Replace with your Kafka broker URL
+   KAFKA_TOPIC_LOGS = 'audit_logs'      # Topic for log auditing
+   KAFKA_TOPIC_ERRORS = 'audit_errors'  # Topic for error logging
+   KAFKA_TOPIC_CONFIG = 'audit_config'  # Topic for configuration auditing
+
+   ```
 
 5. **Agregar REQUEST en el LOGIN**:
 
    En tu `decorators_helper.py`, agregar en la funcion de login_required:
-    ```python
-   from audit_logger.middlewares import set_current_request
-   
-   def login_required(f):
-       def new_f(view, request):
-         # code for decoded token
-         set_current_request(request)
-         return f(view, request)
 
-## Opcional
+   ```python
+   from audit_logger.middlewares import set_current_request
+
+   def login_required(f):
+      def new_f(view, request):
+        # code for decoded token
+        set_current_request(request)
+        return f(view, request)
+   ```
+
+## Opcional auditar tablas de configuracion
+
 Si deseas guardar las configuraciones de tu aplicacion, la puedes separar de los otras tablas con:
 
 En tu `models.py`, agregar modelo manualmente:
-   
-   ```python
-   from audit_logger import AuditLogger
-   
+
+```python
+    from audit_logger import AuditLogger
+
     class Configuracion(ModelBase):
     nombre = models.CharField(unique=True, max_length=100, verbose_name=u'Nombre')
-   
-   # Registrar Configuracion
-   AuditLogger.register_auditoria_config(Configuracion)
+
+    # Registrar Configuracion
+    AuditLogger.register_auditoria_config(Configuracion)
+```
+
+O también podrías auditarlos en un archivo aparte para saber que modelos se encuentran allí.
+crear un archivo audit_config_models.py ubicado en la misma carpeta donde se encuentra el archivo settings.py
+
+```python
+   # audit_config_models.py
+
+    # Importa los modelos que deseas auditar
+    from myapp.models import MyModel1, MyModel2
+    from anotherapp.models import AnotherModel
+
+    # Define una lista con los modelos que quieres auditar
+    CONFIG_MODELS = [
+    MyModel1,  # Modelo 1 de la aplicación myapp
+    MyModel2,  # Modelo 2 de la aplicación myapp
+    AnotherModel,  # Modelo de otra aplicación
+    ]
+
+```
+
+## Opcional auditar tablas de manejo de errores
+
+Si deseas auditar errores críticos en algún punto del código, lo puedes hacer con la excepción dentro de un catch.
+
+```python
+   from audit_logger import AuditLogger
+
+    try:
+        # CODIGO RIESGOSO
+    except Exception as ex:
+        AuditLogger.register_auditoria_errors(ex)
+
+```
