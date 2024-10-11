@@ -1,9 +1,9 @@
 import logging
-import os
 import asyncio
 
 from .topic_manager import KafkaTopicManager
 from .async_producer import KafkaAsyncProducer
+from .local_logger import LocalAuditLogger
 
 class KafkaProducer:
     _log_topic = 'audit_logs'
@@ -11,12 +11,14 @@ class KafkaProducer:
     _config_topic = 'audit_config'
     _producer = None
     _topic_manager = None
+    _local_logger = None
 
     @classmethod
     def initialize(cls, bootstrap_servers, producer_name):
         """Inicializa los atributos de clase con los valores de configuración."""
         cls._producer = KafkaAsyncProducer(bootstrap_servers, producer_name)
         cls._topic_manager = KafkaTopicManager(bootstrap_servers)
+        cls._local_logger = LocalAuditLogger()
 
     @classmethod
     async def _send_event(cls, topic, data):
@@ -26,6 +28,7 @@ class KafkaProducer:
             await cls._producer.send_event(topic, data)
         except Exception as kafka_error:
             logging.warning(f"Error al enviar mensaje a Kafka: {kafka_error}")
+            await cls._local_logger.local_log(topic, data, str(kafka_error))
 
     @staticmethod
     def send_log_event(data):
