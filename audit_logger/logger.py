@@ -9,7 +9,7 @@ from django.db.models.signals import pre_save, post_save, post_delete
 from django.forms.models import model_to_dict
 
 from .middlewares import AuditUserMiddleware
-from kafka.main import KafkaProducer
+from .kafka.main import KafkaProducer
 
 class AuditLogger:
     previous_instance_state = {}

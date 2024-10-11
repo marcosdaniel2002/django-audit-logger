@@ -1,7 +1,7 @@
 from django.apps import AppConfig, apps
 from .helpers import *
 from .logger import AuditLogger
-from kafka.main import KafkaProducer
+from .kafka.main import KafkaProducer
 
 
 class AuditLoggerConfig(AppConfig):
