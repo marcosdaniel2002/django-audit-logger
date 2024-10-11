@@ -2,11 +2,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='unemi-audi-kafka',
-    version='1.1.4',
+    version='1.1.5',
     packages=find_packages(),
     install_requires=[
         'Django>=3.1',
         'confluent_kafka>=1.7.0',
+        'aiokafka>=0.11.0',
     ],
     description='Una aplicación reutilizable de Django para auditar modelos automáticamente con integración con Kafka.',
     long_description=open('README.md').read(),
