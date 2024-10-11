@@ -1,12 +1,14 @@
 import logging
-from confluent_kafka import Producer
 import json
 import os
+import asyncio
 from django.conf import settings
 from confluent_kafka.admin import AdminClient
+from aiokafka import AIOKafkaProducer
 
 class KafkaProducer:
     _producer_name = None
+    _aioproducer = None
 
     @staticmethod
     def _get_project_name():
@@ -17,10 +19,7 @@ class KafkaProducer:
     @staticmethod
     def _kafka_admin_client():
         """Crea un cliente administrativo de Kafka para operaciones sobre topics."""
-        return AdminClient({'bootstrap.servers': settings.KAFKA_BROKER_URL,
-            'message.timeout.ms': 2000,  # Tiempo máximo de espera para que Kafka intente enviar un mensaje (2 segundos)
-            'socket.timeout.ms': 1000,  # Tiempo de espera para los intentos de conexión (1 segundos)
-            'retries': 1})  # Número de reintentos antes de que falle})
+        return AdminClient({'bootstrap.servers': settings.KAFKA_BROKER_URL})
 
     @staticmethod
     def _ensure_topic_exists(topic):
@@ -31,66 +30,92 @@ class KafkaProducer:
         if topic in topic_metadata.topics:
             logging.info(f"El topic '{topic}' ya existe.")
         else:
-            # Lanza un error si el topic no existe
             logging.error(f"El topic '{topic}' no existe.")
             raise Exception('ERROR EN KAFKA (TOPIC NO EXISTE)')
 
     @staticmethod
-    def _kafka_producer():
-        """Crea y configura el productor de Kafka, incluyendo el nombre del productor."""
-        if KafkaProducer._producer_name is None:
+    async def _get_aioproducer():
+        """Crea y configura el productor asíncrono de Kafka."""
+        if KafkaProducer._aioproducer is None:
             KafkaProducer._producer_name = f"producer_{KafkaProducer._get_project_name()}"
-
-        logging.info(f"Creando productor Kafka: {KafkaProducer._producer_name}")
-        return Producer({
-            'bootstrap.servers': settings.KAFKA_BROKER_URL,
-            'client.id': KafkaProducer._producer_name,
-            'message.timeout.ms': 2000,  # Tiempo máximo de espera para que Kafka intente enviar un mensaje (2 segundos)
-            'socket.timeout.ms': 1000,  # Tiempo de espera para los intentos de conexión (1 segundos)
-            'retries': 1  # Número de reintentos antes de que falle
-        })
+            KafkaProducer._aioproducer = AIOKafkaProducer(
+                bootstrap_servers=settings.KAFKA_BROKER_URL,
+                client_id=KafkaProducer._producer_name
+            )
+            await KafkaProducer._aioproducer.start()
+        return KafkaProducer._aioproducer
 
     @staticmethod
-    def _send_event(topic, data):
-        """Envía un evento a Kafka en el topic especificado como JSON de manera asíncrona."""
+    async def _send_event(topic, data):
+        """Envía un evento a Kafka de manera asíncrona."""
         try:
-            # Verifica si el topic existe
             KafkaProducer._ensure_topic_exists(topic)
 
-            producer = KafkaProducer._kafka_producer()
+            producer = await KafkaProducer._get_aioproducer()
 
             if isinstance(data, dict):
                 data['producer'] = KafkaProducer._producer_name
-                data = json.dumps(data, ensure_ascii=False)  # Convierte el dict a JSON
+                data = json.dumps(data, ensure_ascii=False).encode('utf-8')  # Convierte el dict a JSON
             else:
                 logging.error("El dato proporcionado no es un diccionario y no se puede serializar.")
                 return
 
-            # Definir un callback para manejar el resultado asíncrono
-            def delivery_report(err, msg):
-                if err is not None:
-                    logging.error(f"Error al entregar el mensaje: {err}")
-                else:
-                    logging.info(f"Mensaje enviado correctamente a {msg.topic()} [{msg.partition()}]")
-
             # Envía el mensaje de forma asíncrona
-            producer.produce(topic, value=data.encode('utf-8'), callback=delivery_report)
-            # No hacemos flush, Kafka gestionará el envío en segundo plano
+            await producer.send_and_wait(topic, data)
+            logging.info(f"Mensaje enviado correctamente a {topic}")
+
         except Exception as kafka_error:
-            logging.error(f"Error de Kafka: {kafka_error}. Continuando sin Kafka.")
+            logging.error(f"Error al enviar mensaje a Kafka: {kafka_error}")
 
     @staticmethod
     def send_log_event(data):
-        """Envía un evento de auditoría al topic de logs."""
-        KafkaProducer._send_event(settings.KAFKA_TOPIC_LOGS, data)
+        """Envía un evento de auditoría al topic de logs de manera asíncrona."""
+        KafkaProducer._run_in_background(KafkaProducer._send_event, settings.KAFKA_TOPIC_LOGS, data)
 
     @staticmethod
     def send_error_event(data):
-        """Envía un evento de error al topic de errores."""
-        KafkaProducer._send_event(settings.KAFKA_TOPIC_ERRORS, data)
+        """Envía un evento de error al topic de errores de manera asíncrona."""
+        KafkaProducer._run_in_background(KafkaProducer._send_event, settings.KAFKA_TOPIC_ERRORS, data)
 
     @staticmethod
     def send_config_event(data):
-        """Envía un evento de configuración al topic de configuración."""
-        KafkaProducer._send_event(settings.KAFKA_TOPIC_CONFIG, data)
+        """Envía un evento de configuración al topic de configuración de manera asíncrona."""
+        KafkaProducer._run_in_background(KafkaProducer._send_event, settings.KAFKA_TOPIC_CONFIG, data)
+
+    @staticmethod
+    def _run_in_background(coro, *args):
+        """Ejecuta una tarea en segundo plano, sin bloquear el flujo principal."""
+        try:
+            # Intentar obtener el bucle de eventos actual
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                # Si no hay un bucle de eventos en este thread, creamos uno
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
+            # Ejecuta la tarea en segundo plano sin bloquear
+            if loop.is_running():
+                asyncio.create_task(KafkaProducer._safe_run(coro, *args))
+            else:
+                # Si no hay un bucle de eventos corriendo, correr en un nuevo thread
+                loop.run_in_executor(None, lambda: asyncio.run(KafkaProducer._safe_run(coro, *args)))
+
+        except Exception as e:
+            logging.error(f"Error ejecutando tarea asíncrona en segundo plano: {e}")
+
+    @staticmethod
+    async def _safe_run(coro, *args):
+        """Envuelve una tarea asíncrona en un manejador de errores para que no bloquee."""
+        try:
+            await coro(*args)
+        except Exception as e:
+            logging.error(f"Error en la ejecución asíncrona: {e}")
+
+    @staticmethod
+    async def close_producer():
+        """Cierra el productor de Kafka."""
+        if KafkaProducer._aioproducer is not None:
+            await KafkaProducer._aioproducer.stop()
+            KafkaProducer._aioproducer = None
 
