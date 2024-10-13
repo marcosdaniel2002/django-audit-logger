@@ -8,7 +8,7 @@ class AuditLoggerConfig(AppConfig):
     name = 'audit_logger'
 
     def ready(self):
-        bootstrap_servers = get_broker()
+        bootstrap_servers = get_brokers()
         producer_name = get_project_name()
         KafkaProducer.initialize(bootstrap_servers, producer_name)
 

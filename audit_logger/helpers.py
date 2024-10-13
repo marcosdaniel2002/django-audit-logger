@@ -8,8 +8,8 @@ def get_project_name():
     project_name = os.path.basename(settings.BASE_DIR)
     return project_name
 
-def get_broker():
-    return getattr(settings, 'KAFKA_BROKER_URL', 'localhost:9092')
+def get_brokers():
+    return getattr(settings, 'KAFKA_BROKERS_URLS', ['localhost:9092'])
 
 def table_exists(table_name):
     """Verifica si la tabla existe en la base de datos."""

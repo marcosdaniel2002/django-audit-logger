@@ -4,6 +4,8 @@ from confluent_kafka.admin import AdminClient
 class KafkaTopicManager:
     def __init__(self, bootstrap_servers):
         """Inicializa KafkaTopicManager con un AdminClient que se reutiliza."""
+        if isinstance(bootstrap_servers, list):
+            bootstrap_servers = ','.join(bootstrap_servers)
         self.admin_client = AdminClient({'bootstrap.servers': bootstrap_servers, 'log_level': 4})
         logging.info(f"AdminClient inicializado correctamente en {bootstrap_servers}")
 

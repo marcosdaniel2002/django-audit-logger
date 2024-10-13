@@ -48,10 +48,7 @@
    En tu `settings.py`, configurar los Kafka broker y topics:
 
    ```python
-   KAFKA_BROKER_URL = '35.212.2.202:9092'  # Replace with your Kafka broker URL
-   KAFKA_TOPIC_LOGS = 'audit_logs'      # Topic for log auditing
-   KAFKA_TOPIC_ERRORS = 'audit_errors'  # Topic for error logging
-   KAFKA_TOPIC_CONFIG = 'audit_config'  # Topic for configuration auditing
+   KAFKA_BROKERS_URLS = ['35.212.2.202:9092']
 
    ```
 

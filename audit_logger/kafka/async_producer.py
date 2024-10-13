@@ -5,6 +5,8 @@ import json
 class KafkaAsyncProducer:
     """Clase que maneja el productor asíncrono de Kafka."""
     def __init__(self, bootstrap_servers, producer_name):
+        if isinstance(bootstrap_servers, str):
+            bootstrap_servers = [bootstrap_servers]
         self._bootstrap_servers = bootstrap_servers
         self._producer_name = producer_name
         self._aioproducer = None
