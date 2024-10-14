@@ -16,6 +16,15 @@ def set_current_request(request):
     """
     return setattr(_thread_locals, 'request', request)
 
+def get_client_ip(request):
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+    return ip
+
+
 class AuditUserMiddleware(MiddlewareMixin):
     """
     Middleware combinado para capturar el usuario, la request, la URL, la IP y el dispositivo (user-agent).
@@ -67,7 +76,10 @@ class AuditUserMiddleware(MiddlewareMixin):
                 ip = datasession['ip'] if datasession['ip'] else None
                 return ip
             return None
-        return None
+        else:
+            remote_ip = get_client_ip(request)
+            ip= remote_ip if remote_ip else None
+            return ip
 
     @staticmethod
     def get_user_agent():
