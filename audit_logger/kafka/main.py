@@ -76,16 +76,15 @@ class KafkaProducer:
         try:
             loop = asyncio.get_event_loop()
             if not loop.is_running():  # Verifica si el loop no está corriendo
-
-                loop.run_until_complete(cls._resend_loop(interval_seconds))
-            else:
-
+                # Schedule the task using create_task instead of run_until_complete to avoid blocking
                 loop.create_task(cls._resend_loop(interval_seconds))
+            else:
+                # If the loop is already running, just create a new task
+                asyncio.create_task(cls._resend_loop(interval_seconds))
         except RuntimeError:  # Si no hay un loop disponible, se crea uno nuevo
-
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(cls._resend_loop(interval_seconds))
+            loop.create_task(cls._resend_loop(interval_seconds))
 
     @classmethod
     async def _resend_loop(cls, interval_seconds):
