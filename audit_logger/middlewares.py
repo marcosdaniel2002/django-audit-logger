@@ -76,10 +76,11 @@ class AuditUserMiddleware(MiddlewareMixin):
                 ip = datasession['ip'] if datasession['ip'] else None
                 return ip
             return None
-        else:
-            remote_ip = get_client_ip(request)
-            ip= remote_ip if remote_ip else None
+        ip = request.session.get('capippriva', None)
+        if ip:
             return ip
+        remote_ip = get_client_ip(request)
+        return remote_ip if remote_ip else None
 
     @staticmethod
     def get_user_agent():
