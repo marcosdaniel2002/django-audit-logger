@@ -34,12 +34,6 @@ class AuditUserMiddleware(MiddlewareMixin):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Obtener el usuario anterior desde la sesión
-        previous_user = request.session.get('user_anterior', None)
-
-        # Almacenar el usuario actual en thread-local antes de procesar la solicitud
-        _thread_locals.previous_user = previous_user
-
         set_current_request(request)
 
         response = self.get_response(request)
@@ -54,6 +48,10 @@ class AuditUserMiddleware(MiddlewareMixin):
         user_id = getattr(request, 'user_id', None)
         if user_id:
             return user_id
+        user = getattr(request, 'user', None)
+        if user:
+            user_id = getattr(user, 'id', None)
+            return user_id
         return None
 
     @staticmethod
@@ -61,7 +59,17 @@ class AuditUserMiddleware(MiddlewareMixin):
         """
         Devuelve el usuario anterior almacenado en la sesión.
         """
-        return getattr(_thread_locals, 'previous_user', None)
+        request = get_current_request()
+        if request:
+            previous_user = request.session.get('user_anterior', None)
+            if previous_user:
+                # Si es un objeto User, devuelve su id
+                if hasattr(previous_user, 'id'):
+                    return previous_user.id
+                # Si es un ID (entero), lo devuelve tal cual
+                elif isinstance(previous_user, int):
+                    return previous_user
+        return None
 
     @staticmethod
     def get_current_ip():
