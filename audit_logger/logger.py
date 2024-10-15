@@ -139,7 +139,7 @@ class AuditLogger:
     def _build_audit_data(instance, sender, action, current_user, previous_user, previous_state, current_state, **context):
         """Builds the audit data dictionary."""
         frame = None
-        ignore_modules = ['audit_logger', 'dispatcher', 'signal', 'threading', 'django', 'funciones', 'models.py']  # Agregamos módulos a ignorar
+        ignore_modules = ['audit_logger', 'dispatcher', 'signal', 'threading', 'django', 'funciones', 'models', 'model_helper']  # Agregamos módulos a ignorar
 
         for f in inspect.stack():
             # Ignorar archivos que pertenecen a los módulos que no te interesan
