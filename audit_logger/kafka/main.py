@@ -29,6 +29,8 @@ class KafkaProducer:
         except Exception as kafka_error:
             logging.warning(f"Error al enviar mensaje a Kafka: {kafka_error}")
             await cls._local_logger.local_log(topic, data, str(kafka_error))
+        finally:
+            await cls._producer.close()
 
     @staticmethod
     def send_log_event(data):
