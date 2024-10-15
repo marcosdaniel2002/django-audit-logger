@@ -46,3 +46,22 @@ class LocalAuditLogger:
                 logging.info(f"Registro guardado localmente en PostgreSQL motivo: {error_message}")
             except Exception as db_error:
                 logging.error(f"Error al guardar el mensaje en PostgreSQL: {db_error}")
+
+    @sync_to_async
+    def get_local_logs(self):
+        """Obtiene los registros locales fallidos almacenados en la base de datos."""
+        select_query = '''
+           SELECT id, topic, registro FROM kafka_local_logs;
+           '''
+        with connection.cursor() as cursor:
+            cursor.execute(select_query)
+            records = cursor.fetchall()
+        return records
+
+    @sync_to_async
+    def delete_log(self, log_id):
+        """Elimina el registro de log una vez que ha sido reenviado correctamente."""
+        delete_query = 'DELETE FROM kafka_local_logs WHERE id = %s'
+        with connection.cursor() as cursor:
+            cursor.execute(delete_query, [log_id])
+            logging.info(f"Mensaje reenviado a Kafka y eliminado de la base de datos, ID: {log_id}")

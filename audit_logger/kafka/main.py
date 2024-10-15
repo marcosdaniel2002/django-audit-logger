@@ -1,6 +1,6 @@
 import logging
 import asyncio
-
+import json
 from .topic_manager import KafkaTopicManager
 from .async_producer import KafkaAsyncProducer
 from .local_logger import LocalAuditLogger
@@ -19,6 +19,7 @@ class KafkaProducer:
         cls._producer = KafkaAsyncProducer(bootstrap_servers, producer_name)
         cls._topic_manager = KafkaTopicManager(bootstrap_servers)
         cls._local_logger = LocalAuditLogger()
+        cls.start_resend_task()
 
     @classmethod
     async def _send_event(cls, topic, data):
@@ -69,14 +70,61 @@ class KafkaProducer:
         except Exception as e:
             logging.error(f"Error en la ejecución asíncrona: {e}")
 
+    @classmethod
+    def start_resend_task(cls, interval_seconds=60):
+        """Inicia una tarea periódica con asyncio para reintentar el envío de logs cada cierto tiempo."""
+        try:
+            loop = asyncio.get_event_loop()
+            if not loop.is_running():  # Verifica si el loop no está corriendo
+
+                loop.run_until_complete(cls._resend_loop(interval_seconds))
+            else:
+
+                loop.create_task(cls._resend_loop(interval_seconds))
+        except RuntimeError:  # Si no hay un loop disponible, se crea uno nuevo
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(cls._resend_loop(interval_seconds))
+
+    @classmethod
+    async def _resend_loop(cls, interval_seconds):
+        """Bucle de reenvío que se ejecuta periódicamente."""
+
+        while True:
+            await cls.resend_local_logs()
+
+            await asyncio.sleep(interval_seconds)
+
+    @classmethod
+    def is_kafka_online(cls):
+        """Verifica si Kafka está en línea intentando crear un topic temporal."""
+        try:
+            cls._topic_manager.ensure_topic_exists(cls._log_topic)
+            return True
+        except Exception as e:
+            logging.error(f"Kafka sigue fuera de línea: {e}")
+            return False
+
+    @classmethod
+    async def resend_local_logs(cls):
+        """Reenvía los mensajes almacenados localmente a Kafka cuando vuelva a estar disponible."""
+
+        if cls.is_kafka_online():
+
+            records = await cls._local_logger.get_local_logs()  # Usar await para obtener los registros
+            for record in records:
+                log_id, topic, registro = record
+
+                try:
+                    await cls._send_event(topic, json.loads(registro))
+                    await cls._local_logger.delete_log(log_id)  # Usar await para eliminar el log
+                except Exception as kafka_error:
+                    logging.error(f"Error al reintentar enviar el mensaje a Kafka, ID: {log_id}, Error: {kafka_error}")
+
     @staticmethod
     async def close_producer():
         """Cierra el productor de Kafka."""
         if KafkaProducer._aioproducer is not None:
             await KafkaProducer._aioproducer.stop()
             KafkaProducer._aioproducer = None
-
-
-
-
-
